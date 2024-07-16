@@ -1,18 +1,7 @@
 //! Logic for decoding and validating the Nitro Secure Module Attestation
 //! Document.
 
-use attestation_doc_validation::{
-    parse_cert, validate_attestation_doc, validate_attestation_doc_against_cert,
-};
 use base64;
-use ciborium::de::from_reader;
-use coset::CborSerializable;
-// use coset::CoseSign1;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::Cursor;
-use std::io::Read;
 
 use aws_nitro_enclaves_cose::{
     crypto::{Hash, MessageDigest, SignatureAlgorithm, SigningPublicKey},
@@ -311,61 +300,23 @@ impl Hash for Sha2 {
 }
 
 fn main() {
-    let doc = "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";
+    let attestation_doc_bytes = std::include_bytes!("../turnkey_attestation.txt");
 
     // Decode the base64 string
-    let decoded_bytes = base64::decode(doc).expect("Failed to decode base64 string");
+    let decoded_bytes = base64::decode(attestation_doc_bytes).expect("Failed to decode base64-encoded attestation document");
 
-    // Decode the COSE structure
-    // let cose = aws_nitro_enclaves_cose::CoseSign1::from_bytes(decoded_bytes.as_slice())
-    // .expect("Failed to decode COSE structure");
-
-    // Extract the CBOR payload
-    // let cbor_payload = cose.clone().payload.unwrap();
-
-    // let cert_pem = read_pem_file("./src/root.pem");
-
-    // let trusted_root_certificate = cert_from_pem(cert_pem.as_slice()).unwrap();
     let trusted_root_certificate = cert_from_pem(AWS_ROOT_CERT_PEM).unwrap();
 
-    let val_time = std::time::SystemTime::now()
+    let current_time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_secs();
 
-    let att_doc = attestation_doc_from_der(
+    let verified_and_parsed_doc = attestation_doc_from_der(
         decoded_bytes.as_slice(),
         trusted_root_certificate.as_slice(),
-        val_time,
+        current_time,
     );
 
-    // let attestation_doc = unsafe_attestation_doc_from_der(cose_sign1_der)?;
-    // let cose_sign1 = CoseSign1::from_bytes(cose_sign1_der)
-    //     .map_err(|_| AttestError::InvalidCOSESign1Structure)?;
-
-    // syntactic_validation::module_id(&attestation_doc.module_id)?;
-    // syntactic_validation::digest(attestation_doc.digest)?;
-    // syntactic_validation::pcrs(&attestation_doc.pcrs)?;
-    // syntactic_validation::cabundle(&attestation_doc.cabundle)?;
-    // syntactic_validation::timestamp(attestation_doc.timestamp)?;
-    // syntactic_validation::public_key(&attestation_doc.public_key)?;
-    // syntactic_validation::user_data(&attestation_doc.user_data)?;
-    // syntactic_validation::nonce(&attestation_doc.nonce)?;
-
-    // verify_certificate_chain(
-    //     &attestation_doc.cabundle,
-    //     root_cert,
-    //     &attestation_doc.certificate,
-    //     validation_time,
-    // )?;
-    // verify_cose_sign1_sig(&attestation_doc.certificate, &cose_sign1)?;
-
-    print!("att doc: {:?}", att_doc);
-}
-
-fn read_pem_file(file_path: &str) -> Vec<u8> {
-    let mut file = File::open(file_path).expect("Unable to open file");
-    let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer).expect("Unable to read data");
-    buffer
+    print!("Verified and parsed attestation doc: {:?}", verified_and_parsed_doc);
 }
