@@ -166,8 +166,6 @@ pub fn unsafe_attestation_doc_from_der(
 /// root certificate authority via the CA bundle and verify that the end
 /// entity certificate signed the COSE Sign1 structure.
 ///
-/// While this does some basic verification, it is up to the user to verify
-///
 /// # Arguments
 ///
 /// * `cose_sign1_der` - the DER encoded COSE Sign1 structure containing the
@@ -312,11 +310,14 @@ fn main() {
         .unwrap()
         .as_secs();
 
-    let verified_and_parsed_doc = attestation_doc_from_der(
+    let parsed_and_verified_doc = attestation_doc_from_der(
         decoded_bytes.as_slice(),
         trusted_root_certificate.as_slice(),
         current_time,
     );
 
-    print!("Verified and parsed attestation doc: {:?}", verified_and_parsed_doc);
+    match parsed_and_verified_doc {
+        Ok(doc) => print!("Verified and parsed attestation doc: {:?}", doc),
+        Err(e) => print!("Unable to successfully parse and verify attestation document: {:?}", e)
+    }
 }
