@@ -1,3 +1,6 @@
+> :warning: **Deprecation Notice** :warning:  
+> This repository is no longer maintained. Please head to the Turnkey [Rust SDK repo](https://github.com/tkhq/rust-sdk) instead.
+
 # Attestation Validator
 
 A simple utility to parse and verify a Turnkey enclave's attestation document against a root certificate associated with AWS Nitro Attestation PKI (located in `root.pem`). This certificate can be downloaded from https://aws-nitro-enclaves.amazonaws.com/AWS_NitroEnclaves_Root-G1.zip.
